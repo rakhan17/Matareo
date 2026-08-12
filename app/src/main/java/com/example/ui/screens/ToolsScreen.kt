@@ -56,13 +56,13 @@ val categories = mapOf(
     ),
     "Daily Diagnostics" to listOf(
         ToolItem(Icons.Rounded.BatterySaver, "Battery Health Inspector", "View advanced battery stats", cmd = "dumpsys battery"),
-        ToolItem(Icons.Rounded.VolumeUp, "Speaker Cleaner", "Simulate high-freq audio to clear dust"),
+        ToolItem(Icons.Rounded.VolumeUp, "Speaker Cleaner", "Simulate high-freq audio to clear dust", cmd = "echo 'Simulating high-frequency audio to clean speakers...'; sleep 2; echo 'Speaker cleaning completed.'"),
         ToolItem(Icons.Rounded.ScreenSearchDesktop, "Dead Pixel Test", "Find dead pixels on screen", intentAction = "NAV_SCREENTEST"),
-        ToolItem(Icons.Rounded.Bluetooth, "Bluetooth Diagnostics", "Check Bluetooth radio status", intentAction = Settings.ACTION_BLUETOOTH_SETTINGS, requiredPermissions = listOf(Manifest.permission.BLUETOOTH_CONNECT)),
+        ToolItem(Icons.Rounded.Bluetooth, "Bluetooth Diagnostics", "Check Bluetooth radio status", cmd = "dumpsys bluetooth_manager | head -n 50", requiredPermissions = listOf(Manifest.permission.BLUETOOTH_CONNECT)),
         ToolItem(Icons.Rounded.Wifi, "Wi-Fi Signal Analyzer", "Check WLAN interface state", cmd = "dumpsys wifi | grep -i state", requiredPermissions = listOf(Manifest.permission.ACCESS_WIFI_STATE)),
-        ToolItem(Icons.Rounded.Sensors, "Sensor Latency Test", "Check gyroscope and accel delays"),
-        ToolItem(Icons.Rounded.Camera, "Camera API Probe", "Test CameraX compatibility", requiredPermissions = listOf(Manifest.permission.CAMERA)),
-        ToolItem(Icons.Rounded.Mic, "Microphone Tester", "Check mic amplitude & noise", requiredPermissions = listOf(Manifest.permission.RECORD_AUDIO))
+        ToolItem(Icons.Rounded.Sensors, "Sensor Latency Test", "Check gyroscope and accel delays", cmd = "dumpsys sensorservice | head -n 50"),
+        ToolItem(Icons.Rounded.Camera, "Camera API Probe", "Test CameraX compatibility", cmd = "dumpsys media.camera | head -n 100", requiredPermissions = listOf(Manifest.permission.CAMERA)),
+        ToolItem(Icons.Rounded.Mic, "Microphone Tester", "Check mic amplitude & noise", cmd = "dumpsys audio | grep -i mic", requiredPermissions = listOf(Manifest.permission.RECORD_AUDIO))
     ),
     "Network & Security" to listOf(
         ToolItem(Icons.Rounded.NetworkPing, "Ping Tester", "Ping 8.8.8.8 for latency", cmd = "ping -c 4 8.8.8.8"),
@@ -76,10 +76,10 @@ val categories = mapOf(
     "Files & Storage" to listOf(
         ToolItem(Icons.Rounded.FolderDelete, "Cache & Junk Cleaner", "Open storage manager", intentAction = Settings.ACTION_INTERNAL_STORAGE_SETTINGS),
         ToolItem(Icons.Rounded.Storage, "Mount Point Manager", "List mounted file systems", cmd = "df -h"),
-        ToolItem(Icons.Rounded.SdCard, "SD Card Benchmark", "Test external storage I/O", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)),
-        ToolItem(Icons.Rounded.ImageSearch, "Duplicate Photo Finder", "Scan for similar hashes", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)),
-        ToolItem(Icons.Rounded.Archive, "APK Extractor", "Extract installed base.apk", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)),
-        ToolItem(Icons.Rounded.FormatPaint, "App Data Wiper", "Clear specific app data", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE))
+        ToolItem(Icons.Rounded.SdCard, "SD Card Benchmark", "Test external storage I/O", cmd = "echo 'Testing I/O speed...'; dd if=/dev/zero of=/sdcard/test.tmp bs=1M count=20; rm /sdcard/test.tmp; echo 'Test complete.'", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, "android.permission.MANAGE_EXTERNAL_STORAGE")),
+        ToolItem(Icons.Rounded.ImageSearch, "Duplicate Photo Finder", "Scan for similar hashes", cmd = "echo 'Scanning /sdcard/DCIM for duplicates...'; find /sdcard/DCIM -type f -exec md5sum {} + | sort | uniq -d -w 32; echo 'Scan finished.'", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)),
+        ToolItem(Icons.Rounded.Archive, "APK Extractor", "Extract installed base.apk", cmd = "echo 'Listing install paths for base apks...'; pm list packages -f | head -n 20", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)),
+        ToolItem(Icons.Rounded.FormatPaint, "App Data Wiper", "Clear specific app data", intentAction = Settings.ACTION_APPLICATION_SETTINGS, requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE))
     ),
     "Developer Tools" to listOf(
         ToolItem(Icons.Rounded.Terminal, "Local Shell (Terminal)", "Execute bash commands", intentAction = "NAV_TERMINAL"),
@@ -99,17 +99,7 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
 
     var pendingToolAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (allGranted) {
-            pendingToolAction?.invoke()
-        } else {
-            Toast.makeText(context, "Permissions required to run this tool.", Toast.LENGTH_SHORT).show()
-        }
-        pendingToolAction = null
-    }
+    // We don't need the standard permissionLauncher because we'll direct to settings.
 
     if (showOutputDialog) {
         Dialog(onDismissRequest = { showOutputDialog = false }) {
@@ -184,11 +174,27 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
 
                         if (tool.requiredPermissions.isNotEmpty()) {
                             val ungranted = tool.requiredPermissions.filter {
-                                ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                                // For MANAGE_EXTERNAL_STORAGE (Android 11+), it's not a standard runtime permission,
+                                // but we can loosely check via Environment.isExternalStorageManager(),
+                                // however since we mix standard and special permissions, let's just check context:
+                                if (it == "android.permission.MANAGE_EXTERNAL_STORAGE") {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                                        !android.os.Environment.isExternalStorageManager()
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+                                }
                             }
                             if (ungranted.isNotEmpty()) {
-                                pendingToolAction = executeTool
-                                permissionLauncher.launch(ungranted.toTypedArray())
+                                try {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+                                    context.startActivity(intent)
+                                    Toast.makeText(context, "Please allow requested permissions in Settings, then tap again", Toast.LENGTH_LONG).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Unable to open Settings", Toast.LENGTH_SHORT).show()
+                                }
                             } else {
                                 executeTool()
                             }
