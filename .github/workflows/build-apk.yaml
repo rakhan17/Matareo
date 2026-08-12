@@ -25,6 +25,11 @@ jobs:
         with:
           gradle-version: '9.3.1' # Mengunduh mesin pembuat APK secara langsung
 
+      # --- TAMBAHKAN LANGKAH BARU INI ---
+      - name: Buat Kunci (Keystore) Sementara
+        run: keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
+      # ----------------------------------
+
       - name: Mulai Merakit APK (Build Release)
         # Perhatikan: Kita memanggil 'gradle' langsung, bukan './gradlew'
         run: gradle assembleDebug
