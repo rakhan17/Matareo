@@ -1,0 +1,6 @@
+{
+  "name": "Matareo",
+  "description": "Comprehensive local system monitor, benchmark, and diagnostics tool.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
