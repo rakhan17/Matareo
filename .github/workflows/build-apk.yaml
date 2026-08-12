@@ -23,7 +23,7 @@ jobs:
       - name: Install Mesin Gradle Murni
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.4' # Mengunduh mesin pembuat APK secara langsung
+          gradle-version: '9.3.1' # Mengunduh mesin pembuat APK secara langsung
 
       - name: Mulai Merakit APK (Build Release)
         # Perhatikan: Kita memanggil 'gradle' langsung, bukan './gradlew'
