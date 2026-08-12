@@ -1,4 +1,4 @@
-# Matareo 📊 (v1.0.0)
+# Matareo 📊 (v3.9.21)
 
 <div align="center">
   <img src="logo.png" width="128" height="128" alt="Matareo Logo">
