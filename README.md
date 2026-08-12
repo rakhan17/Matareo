@@ -4,9 +4,12 @@
   <img src="logo.png" width="128" height="128" alt="Matareo Logo">
   <h3>The Ultimate Local System Monitor, Benchmark, & Diagnostics Tool for Android</h3>
   <br>
-
-[![Download Matareo](https://img.shields.io/badge/Download_APK-GitHub-black?style=for-the-badge&logo=github)](https://github.com/rakhan17/Matareo/releases/latest/download/app-debug.apk)
-
+  <br>
+  <a href="https://github.com/rakhan17/Matareo/releases/latest/download/app-debug.apk">
+    <img src="https://img.shields.io/badge/Download_APK-GitHub-black?style=for-the-badge&logo=github" height="60" alt="Download Matareo APK">
+  </a>
+  <br>
+  <br>
   <p>
     <b>Matareo</b> is a beautifully crafted, comprehensive Android application designed for power users, developers, and tech enthusiasts. 
     It provides an in-depth view of your system's health, hardware telemetry, network diagnostics, and performance benchmarks, all neatly organized within a modern Jetpack Compose UI (Material Design 3).
