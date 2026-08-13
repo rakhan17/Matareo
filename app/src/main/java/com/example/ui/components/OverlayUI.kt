@@ -41,6 +41,12 @@ fun OverlayUI(state: HudState, onDrag: (Float, Float) -> Unit) {
                     .size(32.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Color(0xCC000000))
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            onDrag(dragAmount.x, dragAmount.y)
+                        }
+                    }
                     .clickable { isMinimized = false },
                 contentAlignment = Alignment.Center
             ) {
