@@ -48,11 +48,9 @@ val categories = mapOf(
         ToolItem(Icons.Rounded.Sync, "Sync Manager", "Open account sync settings", intentAction = Settings.ACTION_SYNC_SETTINGS)
     ),
     "Gaming Suite" to listOf(
-        ToolItem(Icons.Rounded.DashboardCustomize, "Tactical Cheat Menu", "Cyberpunk premium game overlay", intentAction = "TOGGLE_TACTICAL", requiresOverlay = true),
         ToolItem(Icons.Rounded.Layers, "FPS & Temp HUD", "Floating real-time metrics", intentAction = "TOGGLE_HUD", requiresOverlay = true),
         ToolItem(Icons.Rounded.FilterCenterFocus, "Crosshair Overlay", "Enable floating crosshair view", intentAction = "TOGGLE_CROSSHAIR", requiresOverlay = true),
         ToolItem(Icons.Rounded.CenterFocusStrong, "Crosshair Settings", "Customize floating crosshair", intentAction = "NAV_CROSSHAIR"),
-        ToolItem(Icons.Rounded.TouchApp, "Auto-Tapper Macro", "Enable Rapid-Fire Accessibility", intentAction = Settings.ACTION_ACCESSIBILITY_SETTINGS),
         ToolItem(Icons.Rounded.SportsEsports, "Game Booster", "Optimize background processes", cmd = "am kill-all"),
         ToolItem(Icons.Rounded.Thermostat, "Thermal Throttle Check", "Read raw thermal zone data", cmd = "cat /sys/class/thermal/thermal_zone*/temp"),
         ToolItem(Icons.Rounded.Speed, "Matareo Benchmark", "Run local CPU/GPU/RAM benchmark", intentAction = "NAV_BENCHMARK"),
@@ -160,7 +158,6 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
                                 if (Settings.canDrawOverlays(context)) {
                                     val overlayIntent = Intent(context, com.example.FloatingOverlayService::class.java).apply {
                                         action = when (tool.intentAction) {
-                                            "TOGGLE_TACTICAL" -> "TOGGLE_TACTICAL"
                                             "TOGGLE_CROSSHAIR" -> "TOGGLE_CROSSHAIR"
                                             else -> "TOGGLE_HUD" // Default for HUD
                                         }

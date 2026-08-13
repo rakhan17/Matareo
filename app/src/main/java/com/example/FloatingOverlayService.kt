@@ -15,8 +15,6 @@ import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -25,33 +23,23 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.ui.components.CrosshairUI
 import com.example.ui.components.HudState
 import com.example.ui.components.OverlayUI
-import com.example.ui.components.TacticalMenuUI
 import com.example.utils.CrosshairPrefs
 import com.example.utils.ServiceLifecycleOwner
-import com.example.utils.TacticalPrefs
 import kotlinx.coroutines.*
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import kotlin.random.Random
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
-import android.view.View
-import android.graphics.Canvas
 
 class FloatingOverlayService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var windowManager: WindowManager
     private lateinit var lifecycleOwner: ServiceLifecycleOwner
     private lateinit var crosshairPrefs: CrosshairPrefs
-    private lateinit var tacticalPrefs: TacticalPrefs
 
     // Views
     private var overlayView: ComposeView? = null
     private var crosshairView: ComposeView? = null
-    private var tacticalMenuView: ComposeView? = null
-    private var shadowPiercerView: View? = null
 
     // State
     private val hudState = kotlinx.coroutines.flow.MutableStateFlow(HudState())
@@ -61,12 +49,10 @@ class FloatingOverlayService : Service() {
     // Visibility flags
     private var showHud = false
     private var showCrosshair = false
-    private var showTacticalMenu = false
 
     companion object {
         const val ACTION_TOGGLE_HUD = "TOGGLE_HUD"
         const val ACTION_TOGGLE_CROSSHAIR = "TOGGLE_CROSSHAIR"
-        const val ACTION_TOGGLE_TACTICAL = "TOGGLE_TACTICAL"
         const val ACTION_STOP_ALL = "STOP_ALL"
         var isRunning = false
     }
@@ -92,7 +78,6 @@ class FloatingOverlayService : Service() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         crosshairPrefs = CrosshairPrefs.getInstance(this)
-        tacticalPrefs = TacticalPrefs.getInstance(this)
 
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
@@ -115,17 +100,6 @@ class FloatingOverlayService : Service() {
         
         startForeground(1, notification)
         isRunning = true
-
-        // Listen for shadow piercer changes
-        serviceScope.launch {
-            tacticalPrefs.configFlow.collect { config ->
-                if (config.shadowPiercerEnabled) {
-                    enableShadowPiercer()
-                } else {
-                    disableShadowPiercer()
-                }
-            }
-        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -146,16 +120,12 @@ class FloatingOverlayService : Service() {
                 showCrosshair = !showCrosshair
                 if (showCrosshair) setupCrosshairView() else removeCrosshairView()
             }
-            ACTION_TOGGLE_TACTICAL -> {
-                showTacticalMenu = !showTacticalMenu
-                if (showTacticalMenu) setupTacticalMenuView() else removeTacticalMenuView()
-            }
             ACTION_STOP_ALL -> {
                 stopSelf()
             }
         }
         
-        if (!showHud && !showCrosshair && !showTacticalMenu) {
+        if (!showHud && !showCrosshair) {
             stopSelf()
         }
 
@@ -237,89 +207,6 @@ class FloatingOverlayService : Service() {
         crosshairView?.let {
             windowManager.removeView(it)
             crosshairView = null
-        }
-    }
-
-    private fun setupTacticalMenuView() {
-        if (tacticalMenuView != null) return
-        tacticalMenuView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(lifecycleOwner)
-            setViewTreeViewModelStoreOwner(lifecycleOwner)
-            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
-        }
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            getOverlayFlag(),
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 0
-            y = 400
-        }
-
-        tacticalMenuView?.setContent {
-            var isExpanded by androidx.compose.runtime.remember { mutableStateOf(false) }
-            TacticalMenuUI(
-                isExpanded = isExpanded,
-                onToggleExpand = { isExpanded = !isExpanded }
-            )
-        }
-        windowManager.addView(tacticalMenuView, params)
-    }
-
-    private fun removeTacticalMenuView() {
-        tacticalMenuView?.let {
-            windowManager.removeView(it)
-            tacticalMenuView = null
-        }
-    }
-    
-    // Shadow Piercer logic: Hardware acceleration color matrix + brightness overdrive
-    private fun enableShadowPiercer() {
-        if (shadowPiercerView != null) return
-        shadowPiercerView = object : View(this) {
-            val paint = Paint().apply {
-                // Boost gamma, reduce contrast to wash out blacks and reveal shadows
-                val matrix = ColorMatrix().apply {
-                    set(floatArrayOf(
-                        1.5f, 0f, 0f, 0f, 40f, // R
-                        0f, 1.5f, 0f, 0f, 40f, // G
-                        0f, 0f, 1.5f, 0f, 40f, // B
-                        0f, 0f, 0f, 0.3f, 0f   // A (translucent overlay to boost brightness artificially)
-                    ))
-                }
-                colorFilter = ColorMatrixColorFilter(matrix)
-            }
-
-            override fun onDraw(canvas: Canvas) {
-                super.onDraw(canvas)
-                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
-            }
-        }
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            getOverlayFlag(),
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
-            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or 
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            // Overdrive brightness
-            screenBrightness = 1.0f 
-        }
-
-        windowManager.addView(shadowPiercerView, params)
-    }
-
-    private fun disableShadowPiercer() {
-        shadowPiercerView?.let {
-            windowManager.removeView(it)
-            shadowPiercerView = null
         }
     }
 
@@ -441,7 +328,5 @@ class FloatingOverlayService : Service() {
         
         removeOverlayView()
         removeCrosshairView()
-        removeTacticalMenuView()
-        disableShadowPiercer()
     }
 }
