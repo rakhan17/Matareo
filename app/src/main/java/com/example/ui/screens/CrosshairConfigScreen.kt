@@ -26,7 +26,7 @@ import com.example.utils.CrosshairPrefs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CrosshairConfigScreen() {
+fun CrosshairConfigScreen(navController: androidx.navigation.NavController) {
     val context = LocalContext.current
     val prefs = remember { CrosshairPrefs.getInstance(context) }
     val config by prefs.configFlow.collectAsState()
@@ -37,16 +37,27 @@ fun CrosshairConfigScreen() {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text("Crosshair Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-
-        // Preset Selection
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Crosshair Settings", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(imageVector = androidx.compose.material.icons.Icons.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Preset Selection
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -140,6 +151,7 @@ fun CrosshairConfigScreen() {
                 ) {
                     Text("Reset Adjustments")
                 }
+            }
             }
         }
     }

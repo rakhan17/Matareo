@@ -159,7 +159,7 @@ fun MainScreen(viewModel: DashboardViewModel) {
                     WirelessAdbScreen(navController)
                 }
                 composable(Screen.CrosshairConfig.route) {
-                    CrosshairConfigScreen()
+                    CrosshairConfigScreen(navController)
                 }
             }
         }

@@ -24,10 +24,10 @@ import com.example.utils.CrosshairConfig
 fun CrosshairUI(config: CrosshairConfig) {
     Box(
         modifier = Modifier
+            .fillMaxSize()
             .offset(x = config.offsetX.dp, y = config.offsetY.dp)
             .scale(config.scale)
-            .alpha(config.alpha)
-            .size(100.dp), // arbitrary bounds for centering
+            .alpha(config.alpha),
         contentAlignment = Alignment.Center
     ) {
         if (config.imageUri.isNotEmpty()) {

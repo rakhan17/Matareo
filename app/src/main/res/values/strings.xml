@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Matareo</string>
+    <string name="accessibility_service_description">Matareo Tactical Cheat Menu Macro Auto-Tapper Service.</string>
 </resources>
