@@ -27,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.ui.components.GaugeChart
 import com.example.utils.CertificateGenerator
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
@@ -243,7 +242,7 @@ fun BenchmarkScreen(navController: NavController) {
                     onClick = {
                         val success = CertificateGenerator.generateAndSaveCertificate(
                             context,
-                            stats,
+                            null,
                             cpuScore,
                             gpuScore,
                             ramScore,
