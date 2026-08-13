@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
@@ -26,7 +28,7 @@ import com.example.utils.CrosshairPrefs
 @Composable
 fun CrosshairConfigScreen() {
     val context = LocalContext.current
-    val prefs = remember { CrosshairPrefs(context) }
+    val prefs = remember { CrosshairPrefs.getInstance(context) }
     val config by prefs.configFlow.collectAsState()
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -53,8 +55,10 @@ fun CrosshairConfigScreen() {
                 Text("Select Style", fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     PresetButton("Dot", 1, config.preset) { prefs.updateConfig(config.copy(preset = 1, imageUri = "")) }
                     PresetButton("Cross", 2, config.preset) { prefs.updateConfig(config.copy(preset = 2, imageUri = "")) }

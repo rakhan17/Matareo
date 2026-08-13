@@ -90,7 +90,7 @@ class FloatingOverlayService : Service() {
 
     private fun initOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        crosshairPrefs = CrosshairPrefs(this)
+        crosshairPrefs = CrosshairPrefs.getInstance(this)
 
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)

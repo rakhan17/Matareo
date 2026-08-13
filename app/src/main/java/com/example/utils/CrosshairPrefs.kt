@@ -15,7 +15,17 @@ data class CrosshairConfig(
     val offsetY: Float = 0f
 )
 
-class CrosshairPrefs(context: Context) {
+class CrosshairPrefs private constructor(context: Context) {
+    companion object {
+        @Volatile
+        private var INSTANCE: CrosshairPrefs? = null
+
+        fun getInstance(context: Context): CrosshairPrefs {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: CrosshairPrefs(context.applicationContext).also { INSTANCE = it }
+            }
+        }
+    }
     private val prefs: SharedPreferences = context.getSharedPreferences("crosshair_prefs", Context.MODE_PRIVATE)
 
     private val _configFlow = MutableStateFlow(loadConfig())
