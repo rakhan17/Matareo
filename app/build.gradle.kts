@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.sysmon.rkntya"
     minSdk = 24
     targetSdk = 36
-    versionCode = 3931
-    versionName = "3.9.31"
+    versionCode = 3932
+    versionName = "3.9.32"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

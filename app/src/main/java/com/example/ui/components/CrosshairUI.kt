@@ -22,6 +22,8 @@ import com.example.utils.CrosshairConfig
 
 @Composable
 fun CrosshairUI(config: CrosshairConfig) {
+    val crosshairColor = Color(config.color)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -35,40 +37,65 @@ fun CrosshairUI(config: CrosshairConfig) {
                 painter = rememberAsyncImagePainter(model = Uri.parse(config.imageUri)),
                 contentDescription = "Custom Crosshair",
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.wrapContentSize()
             )
         } else {
             // Preset renderings
             when (config.preset) {
                 1 -> { // Dot
-                    Box(modifier = Modifier.size(8.dp).background(Color.Red, CircleShape))
+                    Box(modifier = Modifier.size(8.dp).background(crosshairColor, CircleShape))
                 }
                 2 -> { // Cross
-                    Icon(imageVector = Icons.Rounded.Add, contentDescription = null, tint = Color.Green, modifier = Modifier.size(32.dp))
+                    Icon(imageVector = Icons.Rounded.Add, contentDescription = null, tint = crosshairColor, modifier = Modifier.size(32.dp))
                 }
                 3 -> { // Circle with Dot
                     Box(
                         modifier = Modifier
                             .size(24.dp)
-                            .border(2.dp, Color.Red, CircleShape),
+                            .border(2.dp, crosshairColor, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(modifier = Modifier.size(4.dp).background(Color.Red, CircleShape))
+                        Box(modifier = Modifier.size(4.dp).background(crosshairColor, CircleShape))
                     }
                 }
                 4 -> { // Hollow Circle
                     Box(
                         modifier = Modifier
                             .size(24.dp)
-                            .border(2.dp, Color.Green, CircleShape)
+                            .border(2.dp, crosshairColor, CircleShape)
                     )
                 }
-                5 -> { // Blue Cross
-                    Icon(imageVector = Icons.Rounded.Add, contentDescription = null, tint = Color.Blue, modifier = Modifier.size(32.dp))
+                5 -> { // Neon Triangle Crosshair (Like image 1)
+                    Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                        // Center Cross
+                        Icon(imageVector = Icons.Rounded.Add, contentDescription = null, tint = crosshairColor, modifier = Modifier.size(24.dp))
+                        // Outer Ring
+                        Box(modifier = Modifier.size(48.dp).border(2.dp, crosshairColor.copy(alpha = 0.5f), CircleShape))
+                        // Top Triangle
+                        Box(modifier = Modifier.align(Alignment.TopCenter).offset(y = (-4).dp).size(12.dp).border(2.dp, crosshairColor))
+                        // Bottom Triangle
+                        Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = 4.dp).size(12.dp).border(2.dp, crosshairColor))
+                        // Left Triangle
+                        Box(modifier = Modifier.align(Alignment.CenterStart).offset(x = (-4).dp).size(12.dp).border(2.dp, crosshairColor))
+                        // Right Triangle
+                        Box(modifier = Modifier.align(Alignment.CenterEnd).offset(x = 4.dp).size(12.dp).border(2.dp, crosshairColor))
+                    }
+                }
+                6 -> { // Pixelated Square
+                    Box(modifier = Modifier.size(24.dp).border(3.dp, crosshairColor), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.size(6.dp).background(crosshairColor))
+                    }
+                }
+                7 -> { // Pixelated Double Square
+                    Box(modifier = Modifier.size(32.dp).border(2.dp, crosshairColor), contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.size(20.dp).border(2.dp, crosshairColor), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.size(6.dp).background(crosshairColor))
+                        }
+                    }
                 }
                 else -> {
                     // Default Dot
-                    Box(modifier = Modifier.size(8.dp).background(Color.Yellow, CircleShape))
+                    Box(modifier = Modifier.size(8.dp).background(crosshairColor, CircleShape))
                 }
             }
         }

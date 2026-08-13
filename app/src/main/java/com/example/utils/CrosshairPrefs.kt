@@ -12,7 +12,8 @@ data class CrosshairConfig(
     val scale: Float = 1.0f,
     val alpha: Float = 1.0f,
     val offsetX: Float = 0f,
-    val offsetY: Float = 0f
+    val offsetY: Float = 0f,
+    val color: Long = 0xFF00FF00 // Default Green
 )
 
 class CrosshairPrefs private constructor(context: Context) {
@@ -38,7 +39,8 @@ class CrosshairPrefs private constructor(context: Context) {
             scale = prefs.getFloat("scale", 1.0f),
             alpha = prefs.getFloat("alpha", 1.0f),
             offsetX = prefs.getFloat("offsetX", 0f),
-            offsetY = prefs.getFloat("offsetY", 0f)
+            offsetY = prefs.getFloat("offsetY", 0f),
+            color = prefs.getLong("color", 0xFF00FF00)
         )
     }
 
@@ -50,6 +52,7 @@ class CrosshairPrefs private constructor(context: Context) {
             putFloat("alpha", config.alpha)
             putFloat("offsetX", config.offsetX)
             putFloat("offsetY", config.offsetY)
+            putLong("color", config.color)
             apply()
         }
         _configFlow.value = config
