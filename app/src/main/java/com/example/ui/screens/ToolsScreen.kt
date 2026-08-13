@@ -83,7 +83,7 @@ val categories = mapOf(
     "Files & Storage" to listOf(
         ToolItem(Icons.Rounded.FolderDelete, "Cache & Junk Cleaner", "Open storage manager", intentAction = Settings.ACTION_INTERNAL_STORAGE_SETTINGS),
         ToolItem(Icons.Rounded.Storage, "Mount Point Manager", "List mounted file systems", cmd = "df -h"),
-        ToolItem(Icons.Rounded.SdCard, "SD Card Benchmark", "Test external storage I/O", cmd = "echo 'Testing I/O speed...'; dd if=/dev/zero of=/sdcard/test.tmp bs=1M count=20; rm /sdcard/test.tmp; echo 'Test complete.'", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE, "android.permission.MANAGE_EXTERNAL_STORAGE")),
+        ToolItem(Icons.Rounded.SdCard, "SD Card Benchmark", "Test external storage I/O", cmd = "echo 'Testing I/O speed...'; dd if=/dev/zero of=/sdcard/test.tmp bs=1M count=20; rm /sdcard/test.tmp; echo 'Test complete.'", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)),
         ToolItem(Icons.Rounded.ImageSearch, "Duplicate Photo Finder", "Scan for similar hashes", cmd = "echo 'Scanning /sdcard/DCIM for duplicates...'; find /sdcard/DCIM -type f -exec md5sum {} + | sort | uniq -d -w 32; echo 'Scan finished.'", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)),
         ToolItem(Icons.Rounded.Archive, "APK Extractor", "Extract installed base.apk", cmd = "echo 'Listing install paths for base apks...'; pm list packages -f | head -n 20", requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE)),
         ToolItem(Icons.Rounded.FormatPaint, "App Data Wiper", "Clear specific app data", intentAction = Settings.ACTION_APPLICATION_SETTINGS, requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE))
@@ -222,16 +222,6 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
 
                         if (tool.requiredPermissions.isNotEmpty()) {
                             val ungranted = tool.requiredPermissions.filter {
-                                // For MANAGE_EXTERNAL_STORAGE (Android 11+), it's not a standard runtime permission,
-                                // but we can loosely check via Environment.isExternalStorageManager(),
-                                // however since we mix standard and special permissions, let's just check context:
-                                if (it == "android.permission.MANAGE_EXTERNAL_STORAGE") {
-                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                                        !android.os.Environment.isExternalStorageManager()
-                                    } else {
-                                        false
-                                    }
-                                } else {
                                     ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
                                 }
                             }
