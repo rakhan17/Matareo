@@ -21,6 +21,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 
+data class HudState(
+    val fps: Int = 0,
+    val cpu: Int = 0,
+    val gpu: Int = 0,
+    val temp: Float = 0f,
+    val battery: Int = 0,
+    val ping: Int = 0
+)
+
 @Composable
 fun OverlayUI(state: HudState, onDrag: (Float, Float) -> Unit) {
     var isMinimized by remember { mutableStateOf(false) }
