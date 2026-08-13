@@ -43,7 +43,7 @@ jobs:
       - name: Buat Dummy google-services.json Jika Tidak Ada
         run: |
           if [ ! -f "app/google-services.json" ]; then
-            echo '{"project_info":{"project_number":"123","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:abc","android_client_info":{"package_name":"com.aistudio.sysmon.rkntya"}},"oauth_client":[],"api_key":[],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}],"configuration_version":"1"}' > app/google-services.json
+            echo '{"project_info":{"project_number":"123","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:abc","android_client_info":{"package_name":"com.aistudio.sysmon.rkntya"}},"oauth_client":[],"api_key":[{"current_key":"dummy"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}],"configuration_version":"1"}' > app/google-services.json
           fi
 
       - name: Mulai Merakit APK (Build Debug)
