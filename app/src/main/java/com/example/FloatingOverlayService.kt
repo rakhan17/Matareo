@@ -20,14 +20,19 @@ import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import kotlin.random.Random
+import kotlinx.coroutines.*
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class FloatingOverlayService : Service() {
+    private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var windowManager: WindowManager
     private lateinit var floatingView: LinearLayout
     private lateinit var fpsText: TextView
     private lateinit var cpuText: TextView
     private lateinit var ramText: TextView
     private lateinit var netText: TextView
+    private lateinit var pingText: TextView
     
     private val handler = Handler(Looper.getMainLooper())
     private var isRunning = false
@@ -63,12 +68,14 @@ class FloatingOverlayService : Service() {
             cpuText = createMetricView("CPU", "#FF5555")
             ramText = createMetricView("RAM", "#55AAFF")
             netText = createMetricView("NET", "#FFDD55")
+            pingText = createMetricView("PING", "#FFAA00")
             
             addView(title)
             addView(fpsText)
             addView(cpuText)
             addView(ramText)
             addView(netText)
+            addView(pingText)
         }
 
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -160,13 +167,46 @@ class FloatingOverlayService : Service() {
                     netText.text = "NET: $net KB/s"
                 }
                 
+                // Real Ping
+                serviceScope.launch(Dispatchers.IO) {
+                    val pingLatency = measurePing("8.8.8.8")
+                    withContext(Dispatchers.Main) {
+                        if (pingLatency >= 0) {
+                            pingText.text = "PING: ${pingLatency}ms"
+                            pingText.setTextColor(if (pingLatency < 80) Color.GREEN else if (pingLatency < 150) Color.YELLOW else Color.RED)
+                        } else {
+                            pingText.text = "PING: Timeout"
+                            pingText.setTextColor(Color.RED)
+                        }
+                    }
+                }
+                
                 handler.postDelayed(this, 1000)
             }
         })
     }
 
+    private fun measurePing(ip: String): Int {
+        try {
+            val process = Runtime.getRuntime().exec("ping -c 1 -W 1 $ip")
+            val reader = BufferedReader(InputStreamReader(process.inputStream))
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                if (line!!.contains("time=")) {
+                    val timeString = line!!.substringAfter("time=").substringBefore(" ms")
+                    return timeString.toFloatOrNull()?.toInt() ?: -1
+                }
+            }
+            process.waitFor()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return -1
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         isRunning = false
         if (::floatingView.isInitialized) {
             windowManager.removeView(floatingView)

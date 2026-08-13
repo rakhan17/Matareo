@@ -42,6 +42,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object ScreenTest : Screen("screentest", "Screen Test", Icons.Rounded.Monitor)
     object Benchmark : Screen("benchmark", "Benchmark", Icons.Rounded.Speed)
     object Terminal : Screen("terminal", "Terminal", Icons.Rounded.Terminal)
+    object Traffic : Screen("traffic", "Traffic Inspector", Icons.Rounded.NetworkCheck)
+    object WirelessAdb : Screen("wireless_adb", "Wireless ADB", Icons.Rounded.Cable)
 }
 
 val bottomNavItems = listOf(
@@ -148,6 +150,12 @@ fun MainScreen(viewModel: DashboardViewModel) {
                 }
                 composable(Screen.Benchmark.route) {
                     BenchmarkScreen(navController)
+                }
+                composable(Screen.Traffic.route) {
+                    TrafficScreen(navController)
+                }
+                composable(Screen.WirelessAdb.route) {
+                    WirelessAdbScreen(navController)
                 }
             }
         }

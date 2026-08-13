@@ -6,7 +6,7 @@
 
   <p><b>Advanced System Telemetry & Diagnostic Environment for Android</b></p>
   
-  <p><i>Version 3.9.21</i></p>
+  <p><i>Version 3.9.22</i></p>
 
   <br>
 

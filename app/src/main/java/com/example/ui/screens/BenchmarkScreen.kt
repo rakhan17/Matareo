@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.ui.components.GaugeChart
+import com.example.utils.CertificateGenerator
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -234,6 +236,32 @@ fun BenchmarkScreen(navController: NavController) {
                     }
                 }
                 
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Button(
+                    onClick = {
+                        val success = CertificateGenerator.generateAndSaveCertificate(
+                            context,
+                            stats,
+                            cpuScore,
+                            gpuScore,
+                            ramScore,
+                            storageScore
+                        )
+                        if (success) {
+                            android.widget.Toast.makeText(context, "Certificate saved to Gallery! 🔥", android.widget.Toast.LENGTH_LONG).show()
+                        } else {
+                            android.widget.Toast.makeText(context, "Failed to save certificate.", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                ) {
+                    Icon(Icons.Rounded.Share, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Generate Performance Certificate", fontWeight = FontWeight.Bold)
+                }
                 Spacer(modifier = Modifier.height(24.dp))
             } else if (isRunning) {
                 Spacer(modifier = Modifier.height(64.dp))

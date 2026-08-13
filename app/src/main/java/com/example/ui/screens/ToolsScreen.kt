@@ -65,6 +65,7 @@ val categories = mapOf(
         ToolItem(Icons.Rounded.Mic, "Microphone Tester", "Check mic amplitude & noise", cmd = "dumpsys audio | grep -i mic", requiredPermissions = listOf(Manifest.permission.RECORD_AUDIO))
     ),
     "Network & Security" to listOf(
+        ToolItem(Icons.Rounded.NetworkCheck, "Live Traffic Interception", "Monitor app bandwidth and connections", intentAction = "NAV_TRAFFIC"),
         ToolItem(Icons.Rounded.NetworkPing, "Ping Tester", "Ping 8.8.8.8 for latency", cmd = "ping -c 4 8.8.8.8"),
         ToolItem(Icons.Rounded.Security, "DNS & IP Inspector", "Check routing and nameservers", cmd = "ip a; echo ''; getprop net.dns1"),
         ToolItem(Icons.Rounded.VpnKey, "VPN Status Check", "Check active tun/tap interfaces", cmd = "ip a | grep tun"),
@@ -82,6 +83,7 @@ val categories = mapOf(
         ToolItem(Icons.Rounded.FormatPaint, "App Data Wiper", "Clear specific app data", intentAction = Settings.ACTION_APPLICATION_SETTINGS, requiredPermissions = listOf(Manifest.permission.READ_EXTERNAL_STORAGE))
     ),
     "Developer Tools" to listOf(
+        ToolItem(Icons.Rounded.Cable, "Wireless ADB Controller", "Connect via WiFi Debugging", intentAction = "NAV_WIRELESS_ADB"),
         ToolItem(Icons.Rounded.Terminal, "Local Shell (Terminal)", "Execute bash commands", intentAction = "NAV_TERMINAL"),
         ToolItem(Icons.Rounded.SettingsApplications, "Developer Options", "Quick toggle adb", intentAction = Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS),
         ToolItem(Icons.Rounded.Code, "System Properties", "Dump build.prop values", cmd = "getprop")
@@ -167,6 +169,10 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
                                 navController.navigate(Screen.Benchmark.route)
                             } else if (tool.intentAction == "NAV_TERMINAL") {
                                 navController.navigate(Screen.Terminal.route)
+                            } else if (tool.intentAction == "NAV_TRAFFIC") {
+                                navController.navigate(Screen.Traffic.route)
+                            } else if (tool.intentAction == "NAV_WIRELESS_ADB") {
+                                navController.navigate(Screen.WirelessAdb.route)
                             } else if (tool.intentAction.isNotEmpty()) {
                                 try {
                                     context.startActivity(Intent(tool.intentAction))
