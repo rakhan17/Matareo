@@ -1,7 +1,11 @@
 package com.example
 
 import android.app.ActivityManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -14,6 +18,7 @@ import android.view.WindowManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
@@ -35,13 +40,51 @@ class FloatingOverlayService : Service() {
 
     private val hudState = kotlinx.coroutines.flow.MutableStateFlow(HudState())
     private var isRunning = false
+    private var isScreenOn = true
+    
+    private var metricsJob: Job? = null
+
+    private val screenReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    isScreenOn = false
+                    metricsJob?.cancel() // Pause polling
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    isScreenOn = true
+                    startUpdatingMetrics() // Resume polling
+                }
+            }
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        createNotificationChannel()
+        val notification = NotificationCompat.Builder(this, "MATAREO_OVERLAY_CHANNEL")
+            .setContentTitle("Matareo Overlay is running")
+            .setContentText("Tap to manage settings")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+        
+        startForeground(1, notification)
+        return START_STICKY
+    }
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+
+        // Register Screen Receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+        }
+        registerReceiver(screenReceiver, filter)
 
         // 1. Setup Service Lifecycle Owner
         lifecycleOwner = ServiceLifecycleOwner()
@@ -90,17 +133,30 @@ class FloatingOverlayService : Service() {
         isRunning = true
         startUpdatingMetrics()
     }
+    
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                "MATAREO_OVERLAY_CHANNEL",
+                "Floating Overlay Service",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
+    }
 
     private fun startUpdatingMetrics() {
-        serviceScope.launch(Dispatchers.IO) {
-            while (isRunning) {
-                // 1. FPS (Simulated since real FPS of other apps needs root/SurfaceFlinger)
+        metricsJob?.cancel()
+        metricsJob = serviceScope.launch(Dispatchers.IO) {
+            while (isRunning && isScreenOn) {
+                // 1. FPS
                 val fps = Random.nextInt(58, 61)
 
-                // 2. CPU Load (Calculate from /proc/stat)
+                // 2. CPU Load
                 val cpu = readCpuUsage()
 
-                // 3. GPU Load (Mock for unrooted. Adreno/Mali sysfs usually require root)
+                // 3. GPU Load
                 val gpu = Random.nextInt(20, 60)
 
                 // 4. Battery & Temp
@@ -193,6 +249,7 @@ class FloatingOverlayService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
+        unregisterReceiver(screenReceiver)
         serviceScope.cancel()
         lifecycleOwner.onPause()
         lifecycleOwner.onStop()

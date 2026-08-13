@@ -43,6 +43,7 @@ val categories = mapOf(
         ToolItem(Icons.Rounded.Update, "OS Uptime Analyzer", "View deep system uptime & sleep", cmd = "uptime"),
         ToolItem(Icons.Rounded.Info, "Kernel Info", "View Linux Kernel version", cmd = "uname -a"),
         ToolItem(Icons.Rounded.Android, "SELinux Status", "Check SELinux enforcing state", cmd = "getenforce"),
+        ToolItem(Icons.Rounded.BatteryChargingFull, "Battery Optimization Exemption", "Prevent system from killing Matareo", intentAction = "BATTERY_OPTIMIZATION"),
         ToolItem(Icons.Rounded.Sync, "Sync Manager", "Open account sync settings", intentAction = Settings.ACTION_SYNC_SETTINGS)
     ),
     "Gaming Suite" to listOf(
@@ -173,6 +174,18 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
                                 navController.navigate(Screen.Traffic.route)
                             } else if (tool.intentAction == "NAV_WIRELESS_ADB") {
                                 navController.navigate(Screen.WirelessAdb.route)
+                            } else if (tool.intentAction == "BATTERY_OPTIMIZATION") {
+                                val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+                                if (!pm.isIgnoringBatteryOptimizations(context.packageName)) {
+                                    try {
+                                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Cannot open battery settings", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "App is already exempted!", Toast.LENGTH_SHORT).show()
+                                }
                             } else if (tool.intentAction.isNotEmpty()) {
                                 try {
                                     context.startActivity(Intent(tool.intentAction))

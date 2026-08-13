@@ -6,12 +6,12 @@
 
   <p><b>Advanced System Telemetry & Diagnostic Environment for Android</b></p>
   
-  <p><i>Version 3.9.23</i></p>
+  <p><i>Version 3.9.24</i></p>
 
   <br>
 
   <a href="https://github.com/rakhan17/Matareo/releases/latest/download/matareo.apk">
-    <img src="https://img.shields.io/badge/DOWNLOAD_LATEST_RELEASE_3.9.23-000000?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" alt="Download Matareo">
+    <img src="https://img.shields.io/badge/DOWNLOAD_LATEST_RELEASE_3.9.24-000000?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" alt="Download Matareo">
   </a>
 
   <br><br>
