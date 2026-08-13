@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import android.app.ActivityManager
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,36 +22,42 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+data class AppProcessInfo(val name: String, val packageName: String, val isUserApp: Boolean)
+
 @Composable
 fun ProcessesScreen() {
     val context = LocalContext.current
-    var processes by remember { mutableStateOf<List<Triple<String, String, Boolean>>>(emptyList()) }
+    var processes by remember { mutableStateOf<List<AppProcessInfo>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
+    
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
-    LaunchedEffect(Unit) {
+    fun fetchProcesses() {
+        isLoading = true
         coroutineScope.launch(Dispatchers.IO) {
-            val result = com.example.utils.ShellUtils.executeCommand("ps -A")
-            val lines = result.split("\n").drop(1).filter { it.isNotBlank() }
-            val parsed = lines.mapNotNull { line ->
-                val parts = line.split("\\s+".toRegex())
-                if (parts.size >= 9) {
-                    val user = parts[0]
-                    val pid = parts[1]
-                    val name = parts.last()
-                    val isUserApp = user.startsWith("u0_a")
-                    Triple(name, "PID: $pid • User: $user", isUserApp)
+            val pm = context.packageManager
+            val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            val parsed = packages.mapNotNull { appInfo ->
+                if (appInfo.packageName == context.packageName) return@mapNotNull null
+                
+                val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                val appName = pm.getApplicationLabel(appInfo).toString()
+                
+                if (pm.getLaunchIntentForPackage(appInfo.packageName) != null || !isSystem) {
+                    AppProcessInfo(appName, appInfo.packageName, !isSystem)
                 } else null
-            }.distinctBy { it.first }.sortedByDescending { it.third }.take(50)
+            }.sortedByDescending { it.isUserApp }
             
             withContext(Dispatchers.Main) {
-                processes = if (parsed.isNotEmpty()) parsed else listOf(
-                    Triple("System Process", "PID: 1 • Root", false),
-                    Triple("App Process", "PID: 1245 • User", true)
-                )
+                processes = parsed
                 isLoading = false
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        fetchProcesses()
     }
 
     LazyColumn(
@@ -67,9 +77,19 @@ fun ProcessesScreen() {
                 Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Memory Optimizer", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text("Free up RAM by killing inactive background tasks", style = MaterialTheme.typography.bodySmall)
+                        Text("Free up RAM by killing background tasks", style = MaterialTheme.typography.bodySmall)
                     }
-                    Button(onClick = { Toast.makeText(context, "Memory Optimized!", Toast.LENGTH_SHORT).show() }) {
+                    Button(onClick = { 
+                        coroutineScope.launch(Dispatchers.IO) {
+                            processes.filter { it.isUserApp }.forEach { app ->
+                                activityManager.killBackgroundProcesses(app.packageName)
+                            }
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Memory Optimized!", Toast.LENGTH_SHORT).show()
+                                fetchProcesses()
+                            }
+                        }
+                    }) {
                         Icon(Icons.Rounded.CleaningServices, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Boost")
@@ -79,7 +99,7 @@ fun ProcessesScreen() {
         }
 
         item {
-            Text("Active Processes (${processes.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+            Text("App Processes (${processes.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
         }
 
         if (isLoading) {
@@ -99,11 +119,15 @@ fun ProcessesScreen() {
                         processes.forEach { app ->
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(app.first.substringAfterLast("."), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1)
-                                    Text(app.second, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(app.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+                                    Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (app.third) {
-                                    TextButton(onClick = { Toast.makeText(context, "Kill signal sent", Toast.LENGTH_SHORT).show() }) {
+                                if (app.isUserApp) {
+                                    TextButton(onClick = { 
+                                        activityManager.killBackgroundProcesses(app.packageName)
+                                        Toast.makeText(context, "${app.name} force stopped", Toast.LENGTH_SHORT).show()
+                                        fetchProcesses()
+                                    }) {
                                         Text("Force Stop", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                                     }
                                 } else {

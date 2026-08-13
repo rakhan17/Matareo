@@ -35,6 +35,9 @@ jobs:
       - name: Mulai Merakit APK (Build Debug)
         run: gradle assembleDebug
 
+      - name: Ubah Nama File APK
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Matareo.apk
+
       # --- BAGIAN AJAIBNYA DI SINI ---
       - name: Otomatis Upload ke GitHub Release
         uses: ncipollo/release-action@v1

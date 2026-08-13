@@ -1,92 +1,100 @@
-# Matareo 📊 (v1.0.0)
-
 <div align="center">
-  <img src="logo.png" width="128" height="128" alt="Matareo Logo">
-  <h3>The Ultimate Local System Monitor, Benchmark, & Diagnostics Tool for Android</h3>
+
+  <img src="logo.png" width="120" height="120" alt="Matareo Logo">
+
+  <h1>M A T A R E O</h1>
+
+  <p><b>Advanced System Telemetry & Diagnostic Environment for Android</b></p>
+  
+  <p><i>Version 3.9.21</i></p>
+
   <br>
-  <br>
+
   <a href="https://github.com/rakhan17/Matareo/releases/latest/download/app-debug.apk">
-    <img src="https://img.shields.io/badge/Download_APK-GitHub-black?style=for-the-badge&logo=github" height="60" alt="Download Matareo APK">
+    <img src="https://img.shields.io/badge/DOWNLOAD_LATEST_RELEASE-000000?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" alt="Download Matareo">
   </a>
-  <br>
-  <br>
+
+  <br><br>
+
   <p>
-    <b>Matareo</b> is a beautifully crafted, comprehensive Android application designed for power users, developers, and tech enthusiasts. 
-    It provides an in-depth view of your system's health, hardware telemetry, network diagnostics, and performance benchmarks, all neatly organized within a modern Jetpack Compose UI (Material Design 3).
+    Matareo is a meticulously engineered diagnostic utility designed for system administrators, developers, and hardware professionals. It provides unprecedented visibility into device telemetry, network architecture, and kernel-level performance data through a fluid, modern user interface.
   </p>
+
 </div>
 
 ---
 
-## ✨ Why Matareo?
+## Executive Overview
 
-Whether you are debugging a background process, checking thermal throttling while gaming, or inspecting advanced hardware telemetry, Matareo consolidates 35+ specialized diagnostic tools into one seamless experience. No need for multiple clunky apps—Matareo gives you absolute control over your Android device.
+Matareo consolidates over 35 specialized diagnostic instruments into a single, cohesive environment. Engineered to bypass surface-level metrics, it executes low-level system commands to deliver raw, unfiltered data regarding processor states, thermal dynamics, and memory allocation. It is the definitive tool for absolute device management.
 
-## 🚀 Key Features
+## Core Capabilities
 
-### 📈 Real-Time Hardware Dashboard
-- **CPU & RAM Telemetry**: Live tracking of processor frequencies, active cores, and memory usage.
-- **Interactive Storage Analytics**: Advanced Donut Charts visually map storage allocations (System, Apps, Media, Cache) using custom-drawn canvas graphics.
-- **Deep System Info**: Inspect detailed specifications including Battery Health, SoC model, and Thermal sensor states.
+### Real-Time Hardware Telemetry
+*   **Processor & Memory Analytics:** Live monitoring of CPU clock speeds, per-core activity, and RAM allocation metrics.
+*   **Storage Architecture Visualization:** Advanced canvas-rendered graphics displaying exact partition mapping (System, Applications, Media, and Cache).
+*   **Deep System Profiling:** Comprehensive extraction of SoC specifications, battery health parameters, and hardware thermal states.
 
-### 🛠️ The 35+ Tools Suite
-A massive toolkit organized into categories for every diagnostic need, executing real low-level Android commands:
-- **🎮 Gaming Suite**: Floating Game Overlay (Real-time HUD for FPS, CPU, RAM), Thermal Throttle Check, Game Booster, Multi-touch Tester.
-- **⚙️ Tech & System**: Deep RAM Cleaner, App Manifest Inspector, SELinux Status, Logcat Viewer, Kernel Info.
-- **🌐 Network & Security**: Ping Tester, DNS/IP Inspector, VPN Status, Traceroute, Root Checker, DRM Info.
-- **🩺 Daily Diagnostics**: Speaker Cleaner, Dead Pixel Test, Wi-Fi Signal Analyzer, Battery Inspector, Sensor Latency Test.
-- **📁 Files & Storage**: Mount Point Manager (df -h), Cache Cleaner, SD Card Benchmark, APK Extractor.
-- **💻 Developer Tools**: Native Local Shell (Terminal Emulator), System Properties Dump.
+### Professional Diagnostic Suite
+A categorized toolkit designed for precision troubleshooting:
+*   **Performance Engineering:** System-wide telemetry overlay (HUD), thermal throttling detection, and multi-point touch latency analysis.
+*   **System Integrity:** Memory state management, application manifest inspection, SELinux policy status, and raw Logcat extraction.
+*   **Network Intelligence:** Enterprise-grade network routing tests (Ping, Traceroute), DNS/IP inspection, and interface signal analysis.
+*   **Hardware Calibration:** Display dead-pixel isolation, acoustic speaker cleaning, and raw sensor polling.
+*   **Storage & File Management:** Mount point analysis (`df -h`), persistent cache clearing, and localized APK extraction.
 
-### ⏱️ Local Benchmarking
-- **Stress Testing**: Push your device to the limit with local CPU operations, GPU floating-point math, RAM I/O, and Storage Speed tests.
-- **Exportable PDF Reports**: Generate comprehensive benchmark scores and hardware details directly to a PDF on your device.
+### Local Stress Testing & Benchmarking
+*   **Performance Validation:** Push device limits utilizing local CPU operations, GPU floating-point mathematics, and RAM I/O velocity tests.
+*   **Automated Reporting:** Generate and export comprehensive hardware capability scores as structured PDF documents directly from the device.
 
-### ⌨️ Local Shell Terminal
-- **Integrated CLI**: A built-in terminal emulator directly in the app.
-- **Linux Power**: Execute underlying Linux commands (like `top`, `ping`, `ip a`, `dumpsys`, `df -h`) right from your phone.
-
----
-
-## 📱 Tech Stack
-Built with modern Android development standards:
-- **Language**: Kotlin 1.9+
-- **UI Framework**: Jetpack Compose (Material Design 3)
-- **Architecture**: MVVM with Coroutines and Flow
-- **Build System**: Gradle Kotlin DSL (.gradle.kts)
-- **Minimum SDK**: 24 (Android 7.0)
-- **Target SDK**: 34 (Android 14)
+### Native Command-Line Interface
+*   **Integrated Shell:** A highly responsive terminal emulator embedded within the application.
+*   **Direct Execution:** Run fundamental Linux operations (`top`, `ip a`, `dumpsys`) locally without requiring external desktop bridging.
 
 ---
 
-## 📥 Installation & Setup
+## Technical Architecture
 
-1. **Download the APK** from the badge above or the [Releases](https://github.com/rakhan17/Matareo/releases) page.
-2. Ensure you have "Install from Unknown Sources" enabled on your device.
-3. Install the APK and launch **Matareo**.
-
-### Building from Source
-1. Clone this repository: `git clone https://github.com/rakhan17/Matareo.git`
-2. Open the project in **Android Studio**.
-3. Sync Gradle and ensure the latest SDK tools are installed.
-4. Hit **Run** (`Shift + F10`) to deploy to your device or emulator.
+Built upon modern Android development standards to ensure maximum stability and minimal overhead:
+*   **Primary Language:** Kotlin 1.9+
+*   **Interface Framework:** Jetpack Compose (Material Design 3)
+*   **Design Pattern:** MVVM (Model-View-ViewModel) utilizing Coroutines and Flow
+*   **Build Environment:** Gradle Kotlin DSL
+*   **SDK Compatibility:** Minimum API 24 (Android 7.0) — Target API 34 (Android 14)
 
 ---
 
-## 🔒 Permissions Breakdown
-Matareo only requests permissions when a specific tool needs them. If a tool requires permission, you will be redirected to the App Settings to seamlessly enable it.
-- **`SYSTEM_ALERT_WINDOW`**: Required for the Floating HUD overlay.
-- **`MANAGE_EXTERNAL_STORAGE` / `READ_EXTERNAL_STORAGE`**: For advanced storage benchmarks and APK extraction.
-- **`CAMERA` / `RECORD_AUDIO`**: For hardware sensor and API probing.
-- **`BLUETOOTH_CONNECT`**: For local Bluetooth diagnostic tests.
-- **`ACCESS_WIFI_STATE`**: For network interface inspection.
+## Deployment & Installation
+
+**Direct Installation:**
+1. Retrieve the latest compiled binary (.apk) via the **Download** button above.
+2. Ensure device security settings permit installations from unknown sources.
+3. Execute the package installer to deploy Matareo.
+
+**Compilation from Source:**
+1. Clone the repository: `git clone https://github.com/rakhan17/Matareo.git`
+2. Open the project directory within **Android Studio**.
+3. Synchronize Gradle configurations and verify SDK dependencies.
+4. Compile and deploy via standard IDE execution.
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Security & Privacy Protocol
+
+Matareo operates on a strict principle of transparency and local-only data processing. Permissions are only requested at runtime when actively invoking a specific diagnostic tool.
+
+*   `SYSTEM_ALERT_WINDOW`: Required strictly for rendering the real-time telemetry overlay.
+*   `MANAGE_EXTERNAL_STORAGE`: Required for comprehensive storage benchmarking and directory mapping.
+*   `CAMERA` / `RECORD_AUDIO`: Invoked exclusively for hardware API probing and calibration tests.
+*   `ACCESS_WIFI_STATE` / `BLUETOOTH_CONNECT`: Necessary for network routing and local connectivity diagnostics.
 
 ---
+
+## License
+
+This software is distributed under the MIT License. See the `LICENSE` document for comprehensive terms and conditions.
+
 <div align="center">
-  <i>Built with ❤️ for power users, developers, and tinkerers.</i>
+  <br>
+  <p><i>Engineered for precision. Built for professionals.</i></p>
 </div>

@@ -100,6 +100,26 @@ fun HardwareScreen(stats: SystemStats) {
         } catch (e: Exception) {}
         Pair(cycle, current)
     }
+    
+    val realRamInfo = remember {
+        try {
+            val meminfo = File("/proc/meminfo").readLines()
+            val memTotalLine = meminfo.firstOrNull { it.startsWith("MemTotal:") }
+            if (memTotalLine != null) {
+                val kb = memTotalLine.replace(Regex("[^0-9]"), "").toLongOrNull() ?: 0L
+                val gb = kb / 1024.0 / 1024.0
+                String.format("%.2f GB Total Hardware RAM", gb)
+            } else "Unknown"
+        } catch (e: Exception) { "Unknown" }
+    }
+    
+    val realCpuHardware = remember {
+        try {
+            val cpuinfo = File("/proc/cpuinfo").readLines()
+            val hardwareLine = cpuinfo.firstOrNull { it.startsWith("Hardware") }
+            hardwareLine?.substringAfter(":")?.trim() ?: Build.HARDWARE
+        } catch (e: Exception) { Build.HARDWARE }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -110,11 +130,20 @@ fun HardwareScreen(stats: SystemStats) {
         item { Spacer(modifier = Modifier.height(8.dp)) }
         
         item {
-            HardwareSectionCard("Device & OS", Icons.Rounded.Smartphone) {
-                InspectorItem(Icons.Rounded.Info, "Device Name", stats.deviceName)
+            HardwareSectionCard("Device & OS Identity", Icons.Rounded.Smartphone) {
+                InspectorItem(Icons.Rounded.Info, "Market Name", stats.deviceName)
                 InspectorItem(Icons.Rounded.Android, "OS Version", stats.osVersion)
-                InspectorItem(Icons.Rounded.Memory, "SoC / Hardware", stats.hardware)
+                InspectorItem(Icons.Rounded.Label, "Model (Build.MODEL)", Build.MODEL)
+                InspectorItem(Icons.Rounded.Factory, "Manufacturer", Build.MANUFACTURER)
+                InspectorItem(Icons.Rounded.PrecisionManufacturing, "Device Code", Build.DEVICE)
                 InspectorItem(Icons.Rounded.DeveloperBoard, "Board", board)
+            }
+        }
+        
+        item {
+            HardwareSectionCard("Anti-Fake Detection (Real Hardware)", Icons.Rounded.Security) {
+                InspectorItem(Icons.Rounded.Memory, "Real Physical RAM", realRamInfo)
+                InspectorItem(Icons.Rounded.Memory, "SoC / Actual Hardware", realCpuHardware)
             }
         }
 

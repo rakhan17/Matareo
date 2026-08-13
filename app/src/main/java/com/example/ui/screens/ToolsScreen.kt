@@ -102,19 +102,33 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
     // We don't need the standard permissionLauncher because we'll direct to settings.
 
     if (showOutputDialog) {
-        Dialog(onDismissRequest = { showOutputDialog = false }) {
-            Card(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(outputTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                        Text(terminalOutput, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = { showOutputDialog = false }, modifier = Modifier.align(Alignment.End)) { Text("Close") }
+        AlertDialog(
+            onDismissRequest = { showOutputDialog = false },
+            title = {
+                Text(outputTitle, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+            },
+            text = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 100.dp, max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = terminalOutput,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            }
-        }
+            },
+            confirmButton = {
+                Button(onClick = { showOutputDialog = false }) {
+                    Text("Close", fontWeight = FontWeight.Bold)
+                }
+            },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
     
     LazyColumn(
@@ -161,11 +175,12 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
                                 }
                             } else if (tool.cmd.isNotEmpty()) {
                                 outputTitle = tool.title
-                                terminalOutput = "Executing...\n"
+                                terminalOutput = "Processing..."
                                 showOutputDialog = true
                                 coroutineScope.launch {
                                     val res = ShellUtils.executeCommand(tool.cmd)
-                                    terminalOutput = "> ${tool.cmd}\n\n$res\n"
+                                    val cleanRes = res.trim().replace(Regex("\n+"), "\n")
+                                    terminalOutput = if (cleanRes.isNotBlank()) cleanRes else "Operation completed successfully."
                                 }
                             } else {
                                 Toast.makeText(context, "${tool.title} executed successfully.", Toast.LENGTH_SHORT).show()

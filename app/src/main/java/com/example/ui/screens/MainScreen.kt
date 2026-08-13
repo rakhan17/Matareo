@@ -31,6 +31,7 @@ import com.example.utils.ShellUtils
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.LayoutDirection
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Rounded.Dashboard)
@@ -117,7 +118,12 @@ fun MainScreen(viewModel: DashboardViewModel) {
             NavHost(
                 navController = navController,
                 startDestination = Screen.Dashboard.route,
-                modifier = Modifier.padding(innerPadding)
+                modifier = if (isFullScreen) Modifier.fillMaxSize() else Modifier.padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding(),
+                    start = innerPadding.calculateStartPadding(LayoutDirection.Ltr),
+                    end = innerPadding.calculateEndPadding(LayoutDirection.Ltr)
+                )
             ) {
                 composable(Screen.Dashboard.route) {
                     DashboardContent(uiState, stats)
