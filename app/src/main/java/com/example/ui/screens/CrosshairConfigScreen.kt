@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,7 +44,7 @@ fun CrosshairConfigScreen(navController: androidx.navigation.NavController) {
                 title = { Text("Crosshair Settings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = androidx.compose.material.icons.Icons.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
