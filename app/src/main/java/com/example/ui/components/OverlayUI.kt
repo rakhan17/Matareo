@@ -24,7 +24,6 @@ import com.example.R
 data class HudState(
     val fps: Int = 0,
     val cpu: Int = 0,
-    val gpu: Int = 0,
     val temp: Float = 0f,
     val battery: Int = 0,
     val ping: Int = 0
@@ -34,15 +33,7 @@ data class HudState(
 fun OverlayUI(state: HudState, onDrag: (Float, Float) -> Unit) {
     var isMinimized by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier
-            .pointerInput(Unit) {
-                detectDragGestures { change, dragAmount ->
-                    change.consume()
-                    onDrag(dragAmount.x, dragAmount.y)
-                }
-            }
-    ) {
+    Box {
         if (isMinimized) {
             // Minimized State: Just 32x32 App Logo
             Box(
@@ -71,12 +62,18 @@ fun OverlayUI(state: HudState, onDrag: (Float, Float) -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Drag handle icon
                 Icon(
                     imageVector = Icons.Rounded.DragIndicator,
                     contentDescription = "Drag",
                     tint = Color.Gray,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier
+                        .size(14.dp)
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                onDrag(dragAmount.x, dragAmount.y)
+                            }
+                        }
                 )
 
                 // FPS
@@ -84,9 +81,6 @@ fun OverlayUI(state: HudState, onDrag: (Float, Float) -> Unit) {
                 
                 // CPU
                 MetricItem(icon = Icons.Rounded.Memory, value = "${state.cpu}%", color = Color.White)
-                
-                // GPU
-                MetricItem(icon = Icons.Rounded.GraphicEq, value = "${state.gpu}%", color = Color.White)
                 
                 // Temp
                 val tempColor = if (state.temp > 42f) Color.Red else Color.White
@@ -117,6 +111,6 @@ fun MetricItem(icon: androidx.compose.ui.graphics.vector.ImageVector, value: Str
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
         Spacer(modifier = Modifier.width(2.dp))
-        Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+        Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color, maxLines = 1, softWrap = false)
     }
 }

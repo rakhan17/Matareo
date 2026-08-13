@@ -195,7 +195,6 @@ class FloatingOverlayService : Service() {
             while (isRunning && isScreenOn) {
                 val fps = Random.nextInt(58, 61)
                 val cpu = readCpuUsage()
-                val gpu = Random.nextInt(20, 60)
 
                 val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
                     this@FloatingOverlayService.registerReceiver(null, ifilter)
@@ -215,7 +214,6 @@ class FloatingOverlayService : Service() {
                 hudState.value = HudState(
                     fps = fps,
                     cpu = cpu,
-                    gpu = gpu,
                     temp = temp,
                     battery = batteryPct,
                     ping = ping
@@ -235,7 +233,12 @@ class FloatingOverlayService : Service() {
                     val parts = line!!.split(Regex("\\s+"))
                     for (part in parts) {
                         if (part.contains("%cpu", ignoreCase = true) || part.contains("sys") || part.contains("usr")) {
-                            return part.replace(Regex("[^0-9]"), "").toIntOrNull() ?: Random.nextInt(10, 50)
+                            var parsedCpu = part.replace(Regex("[^0-9]"), "").toIntOrNull() ?: Random.nextInt(10, 50)
+                            if (parsedCpu > 100) {
+                                parsedCpu /= Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+                                if (parsedCpu > 100) parsedCpu = 100
+                            }
+                            return parsedCpu
                         }
                     }
                 }
