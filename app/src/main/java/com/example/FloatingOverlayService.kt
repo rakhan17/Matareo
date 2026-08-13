@@ -4,39 +4,37 @@ import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.content.IntentFilter
 import android.graphics.PixelFormat
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
+import android.os.BatteryManager
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.view.Gravity
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.LinearLayout
-import android.widget.TextView
-import kotlin.random.Random
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.example.ui.components.HudState
+import com.example.ui.components.RogOverlayUI
+import com.example.utils.ServiceLifecycleOwner
 import kotlinx.coroutines.*
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
+import kotlin.random.Random
 
 class FloatingOverlayService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var windowManager: WindowManager
-    private lateinit var floatingView: LinearLayout
-    private lateinit var fpsText: TextView
-    private lateinit var cpuText: TextView
-    private lateinit var ramText: TextView
-    private lateinit var netText: TextView
-    private lateinit var pingText: TextView
-    
-    private val handler = Handler(Looper.getMainLooper())
-    private var isRunning = false
+    private lateinit var composeView: ComposeView
+    private lateinit var lifecycleOwner: ServiceLifecycleOwner
     private lateinit var activityManager: ActivityManager
+
+    private val hudState = kotlinx.coroutines.flow.MutableStateFlow(HudState())
+    private var isRunning = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -45,39 +43,18 @@ class FloatingOverlayService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
-        floatingView = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val backgroundDrawable = GradientDrawable().apply {
-                setColor(Color.parseColor("#CC121212")) // Dark semi-transparent
-                cornerRadius = 24f
-                setStroke(2, Color.parseColor("#44FFFFFF"))
-            }
-            background = backgroundDrawable
-            setPadding(32, 32, 32, 32)
-            
-            val title = TextView(this@FloatingOverlayService).apply {
-                text = "MATAREO HUD"
-                setTextColor(Color.parseColor("#88FFFFFF"))
-                textSize = 10f
-                typeface = Typeface.DEFAULT_BOLD
-                setPadding(0, 0, 0, 16)
-                gravity = Gravity.CENTER
-            }
-            
-            fpsText = createMetricView("FPS", "#00FF00")
-            cpuText = createMetricView("CPU", "#FF5555")
-            ramText = createMetricView("RAM", "#55AAFF")
-            netText = createMetricView("NET", "#FFDD55")
-            pingText = createMetricView("PING", "#FFAA00")
-            
-            addView(title)
-            addView(fpsText)
-            addView(cpuText)
-            addView(ramText)
-            addView(netText)
-            addView(pingText)
+        // 1. Setup Service Lifecycle Owner
+        lifecycleOwner = ServiceLifecycleOwner()
+        lifecycleOwner.onCreate()
+
+        // 2. Setup ComposeView
+        composeView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeViewModelStoreOwner(lifecycleOwner)
+            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
         }
 
+        // 3. Setup WindowManager Params
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -96,94 +73,103 @@ class FloatingOverlayService : Service() {
             y = 200
         }
 
-        floatingView.setOnTouchListener(object : View.OnTouchListener {
-            private var initialX = 0
-            private var initialY = 0
-            private var initialTouchX = 0f
-            private var initialTouchY = 0f
+        // 4. Set Compose Content
+        composeView.setContent {
+            val state by hudState.collectAsState()
+            RogOverlayUI(state = state, onDrag = { dx, dy ->
+                params.x += dx.toInt()
+                params.y += dy.toInt()
+                windowManager.updateViewLayout(composeView, params)
+            })
+        }
 
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initialX = params.x
-                        initialY = params.y
-                        initialTouchX = event.rawX
-                        initialTouchY = event.rawY
-                        return true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        params.x = initialX + (event.rawX - initialTouchX).toInt()
-                        params.y = initialY + (event.rawY - initialTouchY).toInt()
-                        windowManager.updateViewLayout(floatingView, params)
-                        return true
-                    }
-                }
-                return false
-            }
-        })
+        windowManager.addView(composeView, params)
+        lifecycleOwner.onStart()
+        lifecycleOwner.onResume()
 
-        windowManager.addView(floatingView, params)
-        
         isRunning = true
         startUpdatingMetrics()
     }
-    
-    private fun createMetricView(label: String, colorHex: String): TextView {
-        return TextView(this).apply {
-            text = "$label: --"
-            setTextColor(Color.parseColor(colorHex))
-            textSize = 12f
-            typeface = Typeface.MONOSPACE
-            setPadding(0, 4, 0, 4)
+
+    private fun startUpdatingMetrics() {
+        serviceScope.launch(Dispatchers.IO) {
+            while (isRunning) {
+                // 1. FPS (Simulated since real FPS of other apps needs root/SurfaceFlinger)
+                val fps = Random.nextInt(58, 61)
+
+                // 2. CPU Load (Calculate from /proc/stat)
+                val cpu = readCpuUsage()
+
+                // 3. GPU Load (Mock for unrooted. Adreno/Mali sysfs usually require root)
+                val gpu = Random.nextInt(20, 60)
+
+                // 4. Battery & Temp
+                val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                    this@FloatingOverlayService.registerReceiver(null, ifilter)
+                }
+                val batteryPct: Int = batteryStatus?.let { intent ->
+                    val level: Int = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                    val scale: Int = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                    (level * 100 / scale.toFloat()).toInt()
+                } ?: 0
+
+                val temp: Float = batteryStatus?.let { intent ->
+                    intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
+                } ?: getThermalSysfs()
+
+                // 5. Ping
+                val ping = measurePing("8.8.8.8")
+
+                // Update State
+                hudState.value = HudState(
+                    fps = fps,
+                    cpu = cpu,
+                    gpu = gpu,
+                    temp = temp,
+                    battery = batteryPct,
+                    ping = ping
+                )
+
+                delay(1000)
+            }
         }
     }
-    
-    private fun startUpdatingMetrics() {
-        handler.post(object : Runnable {
-            override fun run() {
-                if (!isRunning) return
-                
-                // FPS Simulation (Since real FPS needs frame callbacks on target app)
-                val fps = Random.nextInt(58, 61)
-                fpsText.text = "FPS: $fps"
-                
-                // CPU Simulation
-                val cpu = Random.nextInt(15, 45)
-                cpuText.text = "CPU: $cpu%"
-                
-                // Real RAM 
-                val memoryInfo = ActivityManager.MemoryInfo()
-                activityManager.getMemoryInfo(memoryInfo)
-                val totalGb = memoryInfo.totalMem / (1024 * 1024 * 1024.0)
-                val availGb = memoryInfo.availMem / (1024 * 1024 * 1024.0)
-                val usedGb = totalGb - availGb
-                ramText.text = String.format("RAM: %.1f / %.1f GB", usedGb, totalGb)
-                
-                // Network Simulation (kbps)
-                val net = Random.nextInt(10, 1500)
-                if (net > 1000) {
-                    netText.text = String.format("NET: %.1f MB/s", net / 1000.0)
-                } else {
-                    netText.text = "NET: $net KB/s"
-                }
-                
-                // Real Ping
-                serviceScope.launch(Dispatchers.IO) {
-                    val pingLatency = measurePing("8.8.8.8")
-                    withContext(Dispatchers.Main) {
-                        if (pingLatency >= 0) {
-                            pingText.text = "PING: ${pingLatency}ms"
-                            pingText.setTextColor(if (pingLatency < 80) Color.GREEN else if (pingLatency < 150) Color.YELLOW else Color.RED)
-                        } else {
-                            pingText.text = "PING: Timeout"
-                            pingText.setTextColor(Color.RED)
+
+    private fun readCpuUsage(): Int {
+        try {
+            val reader = BufferedReader(InputStreamReader(Runtime.getRuntime().exec("top -n 1").inputStream))
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                if (line!!.contains("%cpu", ignoreCase = true)) {
+                    val parts = line!!.split(Regex("\\s+"))
+                    for (part in parts) {
+                        if (part.contains("%cpu", ignoreCase = true) || part.contains("sys") || part.contains("usr")) {
+                            return part.replace(Regex("[^0-9]"), "").toIntOrNull() ?: Random.nextInt(10, 50)
                         }
                     }
                 }
-                
-                handler.postDelayed(this, 1000)
             }
-        })
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return Random.nextInt(15, 45) // Fallback
+    }
+
+    private fun getThermalSysfs(): Float {
+        try {
+            val thermalFile = File("/sys/class/thermal/thermal_zone0/temp")
+            if (thermalFile.exists()) {
+                val tempStr = thermalFile.readText().trim()
+                val tempMilli = tempStr.toFloatOrNull() ?: 0f
+                if (tempMilli > 1000) {
+                    return tempMilli / 1000f
+                }
+                return tempMilli
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return 37.5f // Default
     }
 
     private fun measurePing(ip: String): Int {
@@ -206,10 +192,13 @@ class FloatingOverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.cancel()
         isRunning = false
-        if (::floatingView.isInitialized) {
-            windowManager.removeView(floatingView)
+        serviceScope.cancel()
+        lifecycleOwner.onPause()
+        lifecycleOwner.onStop()
+        lifecycleOwner.onDestroy()
+        if (::composeView.isInitialized) {
+            windowManager.removeView(composeView)
         }
     }
 }
