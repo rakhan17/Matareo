@@ -1,5 +1,3 @@
-# Matareo 📊 (v1.0.0)
-
 <div align="center">
 
   <img src="logo.png" width="120" height="120" alt="Matareo Logo">
