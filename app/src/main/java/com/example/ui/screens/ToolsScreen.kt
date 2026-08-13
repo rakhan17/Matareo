@@ -222,8 +222,7 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
 
                         if (tool.requiredPermissions.isNotEmpty()) {
                             val ungranted = tool.requiredPermissions.filter {
-                                    ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
-                                }
+                                ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
                             }
                             if (ungranted.isNotEmpty()) {
                                 try {
