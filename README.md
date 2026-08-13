@@ -10,7 +10,7 @@
 
   <br>
 
-  <a href="https://github.com/rakhan17/Matareo/releases/latest/download/app-debug.apk">
+  <a href="https://github.com/rakhan17/Matareo/releases/latest/download/matareo.apk">
     <img src="https://img.shields.io/badge/DOWNLOAD_LATEST_RELEASE-000000?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" alt="Download Matareo">
   </a>
 
