@@ -49,6 +49,7 @@ val categories = mapOf(
     ),
     "Gaming Suite" to listOf(
         ToolItem(Icons.Rounded.Layers, "FPS & Temp Overlay", "Floating real-time metrics", requiresOverlay = true),
+        ToolItem(Icons.Rounded.CenterFocusStrong, "Crosshair Settings", "Customize floating crosshair", intentAction = "NAV_CROSSHAIR"),
         ToolItem(Icons.Rounded.SportsEsports, "Game Booster", "Optimize background processes", cmd = "am kill-all"),
         ToolItem(Icons.Rounded.Thermostat, "Thermal Throttle Check", "Read raw thermal zone data", cmd = "cat /sys/class/thermal/thermal_zone*/temp"),
         ToolItem(Icons.Rounded.Speed, "Matareo Benchmark", "Run local CPU/GPU/RAM benchmark", intentAction = "NAV_BENCHMARK"),
@@ -154,8 +155,11 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
                         val executeTool: () -> Unit = {
                             if (tool.requiresOverlay) {
                                 if (Settings.canDrawOverlays(context)) {
-                                    context.startService(Intent(context, com.example.FloatingOverlayService::class.java))
-                                    Toast.makeText(context, "Floating Overlay Started", Toast.LENGTH_SHORT).show()
+                                    val overlayIntent = Intent(context, com.example.FloatingOverlayService::class.java).apply {
+                                        action = com.example.FloatingOverlayService.ACTION_TOGGLE
+                                    }
+                                    context.startService(overlayIntent)
+                                    Toast.makeText(context, "Toggled Overlay", Toast.LENGTH_SHORT).show()
                                 } else {
                                     try {
                                         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
@@ -175,6 +179,8 @@ fun ToolsScreen(navController: androidx.navigation.NavController) {
                                 navController.navigate(Screen.Traffic.route)
                             } else if (tool.intentAction == "NAV_WIRELESS_ADB") {
                                 navController.navigate(Screen.WirelessAdb.route)
+                            } else if (tool.intentAction == "NAV_CROSSHAIR") {
+                                navController.navigate(Screen.CrosshairConfig.route)
                             } else if (tool.intentAction == "BATTERY_OPTIMIZATION") {
                                 val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
                                 if (!pm.isIgnoringBatteryOptimizations(context.packageName)) {

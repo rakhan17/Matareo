@@ -1,7 +1,5 @@
 package com.example
 
-import android.app.ActivityManager
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -22,8 +20,10 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.example.ui.components.CrosshairUI
 import com.example.ui.components.HudState
-import com.example.ui.components.RogOverlayUI
+import com.example.ui.components.OverlayUI
+import com.example.utils.CrosshairPrefs
 import com.example.utils.ServiceLifecycleOwner
 import kotlinx.coroutines.*
 import java.io.BufferedReader
@@ -34,26 +34,30 @@ import kotlin.random.Random
 class FloatingOverlayService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
     private lateinit var windowManager: WindowManager
-    private lateinit var composeView: ComposeView
+    private lateinit var overlayView: ComposeView
+    private lateinit var crosshairView: ComposeView
     private lateinit var lifecycleOwner: ServiceLifecycleOwner
-    private lateinit var activityManager: ActivityManager
+    private lateinit var crosshairPrefs: CrosshairPrefs
 
     private val hudState = kotlinx.coroutines.flow.MutableStateFlow(HudState())
-    private var isRunning = false
     private var isScreenOn = true
-    
     private var metricsJob: Job? = null
+
+    companion object {
+        const val ACTION_TOGGLE = "com.example.ACTION_TOGGLE_OVERLAY"
+        var isRunning = false
+    }
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_OFF -> {
                     isScreenOn = false
-                    metricsJob?.cancel() // Pause polling
+                    metricsJob?.cancel()
                 }
                 Intent.ACTION_SCREEN_ON -> {
                     isScreenOn = true
-                    startUpdatingMetrics() // Resume polling
+                    startUpdatingMetrics()
                 }
             }
         }
@@ -62,42 +66,58 @@ class FloatingOverlayService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        createNotificationChannel()
-        val notification = NotificationCompat.Builder(this, "MATAREO_OVERLAY_CHANNEL")
-            .setContentTitle("Matareo Overlay is running")
-            .setContentText("Tap to manage settings")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-        
-        startForeground(1, notification)
+        if (intent?.action == ACTION_TOGGLE) {
+            if (isRunning) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        }
+
+        if (!isRunning) {
+            createNotificationChannel()
+            val notification = NotificationCompat.Builder(this, "MATAREO_OVERLAY_CHANNEL")
+                .setContentTitle("Matareo Overlay is running")
+                .setContentText("Tap to manage settings")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+            
+            startForeground(1, notification)
+            initOverlay()
+        }
         return START_STICKY
     }
 
-    override fun onCreate() {
-        super.onCreate()
+    private fun initOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        crosshairPrefs = CrosshairPrefs(this)
 
-        // Register Screen Receiver
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
         }
         registerReceiver(screenReceiver, filter)
 
-        // 1. Setup Service Lifecycle Owner
         lifecycleOwner = ServiceLifecycleOwner()
         lifecycleOwner.onCreate()
 
-        // 2. Setup ComposeView
-        composeView = ComposeView(this).apply {
+        setupOverlayView()
+        setupCrosshairView()
+
+        lifecycleOwner.onStart()
+        lifecycleOwner.onResume()
+
+        isRunning = true
+        startUpdatingMetrics()
+    }
+
+    private fun setupOverlayView() {
+        overlayView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeViewModelStoreOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
         }
 
-        // 3. Setup WindowManager Params
         val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         } else {
@@ -116,24 +136,47 @@ class FloatingOverlayService : Service() {
             y = 200
         }
 
-        // 4. Set Compose Content
-        composeView.setContent {
+        overlayView.setContent {
             val state by hudState.collectAsState()
-            RogOverlayUI(state = state, onDrag = { dx, dy ->
+            OverlayUI(state = state, onDrag = { dx, dy ->
                 params.x += dx.toInt()
                 params.y += dy.toInt()
-                windowManager.updateViewLayout(composeView, params)
+                windowManager.updateViewLayout(overlayView, params)
             })
         }
-
-        windowManager.addView(composeView, params)
-        lifecycleOwner.onStart()
-        lifecycleOwner.onResume()
-
-        isRunning = true
-        startUpdatingMetrics()
+        windowManager.addView(overlayView, params)
     }
-    
+
+    private fun setupCrosshairView() {
+        crosshairView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeViewModelStoreOwner(lifecycleOwner)
+            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+        }
+
+        val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+
+        val crosshairParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            layoutFlag,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.CENTER
+        }
+
+        crosshairView.setContent {
+            val config by crosshairPrefs.configFlow.collectAsState()
+            CrosshairUI(config = config)
+        }
+        windowManager.addView(crosshairView, crosshairParams)
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -150,16 +193,10 @@ class FloatingOverlayService : Service() {
         metricsJob?.cancel()
         metricsJob = serviceScope.launch(Dispatchers.IO) {
             while (isRunning && isScreenOn) {
-                // 1. FPS
                 val fps = Random.nextInt(58, 61)
-
-                // 2. CPU Load
                 val cpu = readCpuUsage()
-
-                // 3. GPU Load
                 val gpu = Random.nextInt(20, 60)
 
-                // 4. Battery & Temp
                 val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
                     this@FloatingOverlayService.registerReceiver(null, ifilter)
                 }
@@ -173,10 +210,8 @@ class FloatingOverlayService : Service() {
                     intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10f
                 } ?: getThermalSysfs()
 
-                // 5. Ping
                 val ping = measurePing("8.8.8.8")
 
-                // Update State
                 hudState.value = HudState(
                     fps = fps,
                     cpu = cpu,
@@ -208,7 +243,7 @@ class FloatingOverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return Random.nextInt(15, 45) // Fallback
+        return Random.nextInt(15, 45)
     }
 
     private fun getThermalSysfs(): Float {
@@ -225,7 +260,7 @@ class FloatingOverlayService : Service() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return 37.5f // Default
+        return 37.5f
     }
 
     private fun measurePing(ip: String): Int {
@@ -248,14 +283,19 @@ class FloatingOverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        isRunning = false
-        unregisterReceiver(screenReceiver)
-        serviceScope.cancel()
-        lifecycleOwner.onPause()
-        lifecycleOwner.onStop()
-        lifecycleOwner.onDestroy()
-        if (::composeView.isInitialized) {
-            windowManager.removeView(composeView)
+        if (isRunning) {
+            isRunning = false
+            unregisterReceiver(screenReceiver)
+            serviceScope.cancel()
+            lifecycleOwner.onPause()
+            lifecycleOwner.onStop()
+            lifecycleOwner.onDestroy()
+            if (::overlayView.isInitialized) {
+                windowManager.removeView(overlayView)
+            }
+            if (::crosshairView.isInitialized) {
+                windowManager.removeView(crosshairView)
+            }
         }
     }
 }

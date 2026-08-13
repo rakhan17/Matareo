@@ -44,6 +44,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Terminal : Screen("terminal", "Terminal", Icons.Rounded.Terminal)
     object Traffic : Screen("traffic", "Traffic Inspector", Icons.Rounded.NetworkCheck)
     object WirelessAdb : Screen("wireless_adb", "Wireless ADB", Icons.Rounded.Cable)
+    object CrosshairConfig : Screen("crosshair_config", "Crosshair Settings", Icons.Rounded.CenterFocusStrong)
 }
 
 val bottomNavItems = listOf(
@@ -156,6 +157,9 @@ fun MainScreen(viewModel: DashboardViewModel) {
                 }
                 composable(Screen.WirelessAdb.route) {
                     WirelessAdbScreen(navController)
+                }
+                composable(Screen.CrosshairConfig.route) {
+                    CrosshairConfigScreen()
                 }
             }
         }
